@@ -6,6 +6,7 @@
 
 #define FASTA_INITIAL_SEQUENCE_LENGTH 1000
 #define FASTA_MAX_LINE 1024
+#define FASTA_EXCLUDE_NCBI_BLOSUM62 "JOU"
 
 struct fasta_file {
     struct fasta_seq **seqs;
@@ -18,13 +19,13 @@ struct fasta_seq {
 };
 
 struct fasta_file *
-fasta_read_all(const char * file_name);
+fasta_read_all(const char *file_name, const char *exclude);
 
 struct fasta_seq *
-fasta_read_next(FILE *f);
+fasta_read_next(FILE *f, const char *exclude);
 
 void
-fasta_free_all_seqs(struct fasta_file *ff);
+fasta_free_all(struct fasta_file *ff);
 
 void
 fasta_free_seq(struct fasta_seq *seq);

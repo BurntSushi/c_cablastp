@@ -5,15 +5,18 @@
 #include <string.h>
 
 #include "fasta.h"
+#include "util.h"
+
+int test[3][5] = { {1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15} };
 
 static bool
 is_new_sequence_start(FILE *f);
 
 static void
-chomp(char *s1);
+exclude_residues(char *seq, const char *exclude);
 
 struct fasta_file *
-fasta_read_all(const char * file_name)
+fasta_read_all(const char *file_name, const char *exclude)
 {
     FILE *f;
     struct fasta_file *ff;
@@ -30,12 +33,13 @@ fasta_read_all(const char * file_name)
 
     ff = malloc(sizeof(*ff));
     assert(ff);
+    ff->length = 0;
 
     allocated = FASTA_INITIAL_SEQUENCE_LENGTH;
     ff->seqs = malloc(allocated * sizeof(*ff->seqs));
     assert(ff->seqs);
 
-    while (NULL != (new_seq = fasta_read_next(f))) {
+    while (NULL != (new_seq = fasta_read_next(f, exclude))) {
         if (ff->length == allocated) {
             allocated *= 1.5;
             ff->seqs = realloc(ff->seqs, allocated * sizeof(*ff->seqs));
@@ -43,59 +47,63 @@ fasta_read_all(const char * file_name)
         }
         ff->seqs[ff->length++] = new_seq;
     }
+
+    fclose(f);
     
     return ff;
 }
 
 struct fasta_seq *
-fasta_read_next(FILE *f)
+fasta_read_next(FILE *f, const char *exclude)
 {
     struct fasta_seq *fs;
-    char buf[FASTA_MAX_LINE];
-    char *fgets_status;
-
-    fs = malloc(sizeof(*fs));
-    assert(fs);
+    char *line = NULL;
 
     /* check to make sure the next line starts a new sequence record */
     if (!is_new_sequence_start(f))
         return NULL;
 
     /* read in the sequence id */
-    fgets_status = fgets(buf, FASTA_MAX_LINE, f);
-    if (fgets_status == NULL)
+    if (0 == readline(f, &line)) {
+        free(line);
         return NULL;
+    }
 
-    chomp(buf);
+    line = trim(line, "> \n\r\t");
 
-    fs->name = malloc((strlen(buf) + 1) * sizeof(*fs->name));
+    fs = malloc(sizeof(*fs));
+    assert(fs);
+
+    fs->name = malloc((strlen(line) + 1) * sizeof(*fs->name));
     assert(fs->name);
-    strcpy(fs->name, buf);
+    strcpy(fs->name, line);
+    free(line);
 
     /* Now read all of the sequence data for this record */
     fs->seq = malloc(sizeof(*fs->seq));
     assert(fs->seq);
     fs->seq[0] = '\0';
     while (!is_new_sequence_start(f)) {
-        memset(buf, 0, FASTA_MAX_LINE);
-
-        fgets_status = fgets(buf, FASTA_MAX_LINE, f);
-        if (fgets_status == NULL) {
+        if (0 == readline(f, &line)) {
+            free(line);
             return fs;
         }
 
-        chomp(buf);
+        line = trim(line, "* \n\r\t");
+        exclude_residues(line, exclude);
+
         fs->seq = realloc(
-            fs->seq, sizeof(*fs->seq) * (1 + strlen(buf) + strlen(fs->seq)));
+            fs->seq, sizeof(*fs->seq) * (1 + strlen(line) + strlen(fs->seq)));
         assert(fs->seq);
-        strcat(fs->seq, buf);
+        strcat(fs->seq, line);
+        free(line);
     }
 
     return fs;
 }
 
 void
-fasta_free_all_seqs(struct fasta_file *ff)
+fasta_free_all(struct fasta_file *ff)
 {
     int i;
 
@@ -131,13 +139,12 @@ is_new_sequence_start(FILE *f)
 }
 
 static void
-chomp(char *s1)
+exclude_residues(char *seq, const char *exclude)
 {
-    int len;
+    int i, j;
 
-    len = strlen(s1);
-    if (s1[len - 1] == '\n')
-        s1[len - 1] = '\0';
-    if (s1[len - 1] == '\r')
-        s1[len - 1] = '\0';
+    for (i = 0; seq[i] != '\0'; i++)
+        for (j = 0; exclude[j] != '\0'; j++)
+            if (seq[i] == exclude[j])
+                seq[i] = 'X';
 }
