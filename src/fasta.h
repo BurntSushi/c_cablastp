@@ -2,7 +2,6 @@
 #define __CABLASTP_FASTA_H__
 
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
