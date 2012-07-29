@@ -7,13 +7,14 @@
 #include "fasta.h"
 #include "util.h"
 
-int test[3][5] = { {1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15} };
-
 static bool
 is_new_sequence_start(FILE *f);
 
 static void
 exclude_residues(char *seq, const char *exclude);
+
+static void *
+fasta_generator(void *gen);
 
 struct fasta_file *
 fasta_read_all(const char *file_name, const char *exclude)
@@ -119,6 +120,143 @@ fasta_free_seq(struct fasta_seq *seq)
     free(seq->name);
     free(seq->seq);
     free(seq);
+}
+
+struct fasta_seq_gen *
+fasta_generator_start(const char *file_name, const char *exclude,
+                      int buffer_capacity)
+{
+    FILE *fp;
+    struct fasta_seq_gen *fsg;
+    int terrno;
+    int i;
+
+    assert(buffer_capacity > 0);
+
+    if (NULL == (fp = fopen(file_name, "r"))) {
+        perror("fasta_start_generator");
+        exit(1);
+    }
+
+    fsg = malloc(sizeof(*fsg));
+    assert(fsg);
+
+    fsg->fp = fp;
+    fsg->pos = 0;
+    fsg->length = 0;
+    fsg->capacity = buffer_capacity;
+    fsg->empty = false;
+    fsg->exclude = exclude;
+
+    fsg->buf = malloc(buffer_capacity * sizeof(*fsg->buf));
+    assert(fsg->buf);
+    for (i = 0; i < fsg->capacity; i++)
+        fsg->buf[i] = NULL;
+
+    if (0 != (terrno = pthread_cond_init(&fsg->cond_length, NULL))) {
+        fprintf(stderr, "Could not create cond var. Errno: %d\n", terrno);
+        exit(1);
+    }
+    if (0 != (terrno = pthread_mutex_init(&fsg->lock_empty, NULL))) {
+        fprintf(stderr, "Could not create mutex. Errno: %d\n", terrno);
+        exit(1);
+    }
+    if (0 != (terrno = pthread_mutex_init(&fsg->lock_length, NULL))) {
+        fprintf(stderr, "Could not create mutex. Errno: %d\n", terrno);
+        exit(1);
+    }
+
+    terrno = pthread_create(&fsg->thread, NULL, fasta_generator, (void*) fsg);
+    if (0 != terrno) {
+        fprintf(stderr, "Could not create pthread. Errno: %d\n", terrno);
+        exit(1);
+    }
+
+    return fsg;
+}
+
+void
+fasta_generator_free(struct fasta_seq_gen *fsg)
+{
+    int terrno;
+
+    if (0 != (terrno = pthread_mutex_destroy(&fsg->lock_empty))) {
+        fprintf(stderr, "Could not destroy mutex. Errno: %d\n", terrno);
+        exit(1);
+    }
+    if (0 != (terrno = pthread_mutex_destroy(&fsg->lock_length))) {
+        fprintf(stderr, "Could not destroy mutex. Errno: %d\n", terrno);
+        exit(1);
+    }
+    if (0 != (terrno = pthread_cond_destroy(&fsg->cond_length))) {
+        fprintf(stderr, "Could not destroy cond var. Errno: %d\n", terrno);
+        exit(1);
+    }
+    if (0 != (terrno = pthread_join(fsg->thread, NULL))) {
+        fprintf(stderr, "Could not join thread. Errno: %d\n", terrno);
+        exit(1);
+    }
+    fclose(fsg->fp);
+    free(fsg->buf);
+    free(fsg);
+}
+
+static void *
+fasta_generator(void *gen)
+{
+    struct fasta_seq_gen *fsg;
+    struct fasta_seq *seq;
+
+    fsg = (struct fasta_seq_gen *) gen;
+
+    while (NULL != (seq = fasta_read_next(fsg->fp, fsg->exclude))) {
+        pthread_mutex_lock(&fsg->lock_length);
+        while (fsg->length == fsg->capacity)
+            pthread_cond_wait(&fsg->cond_length, &fsg->lock_length);
+
+        assert(fsg->length < fsg->capacity);
+        assert(fsg->length >= 0);
+
+        fsg->buf[(fsg->pos + fsg->length) % fsg->capacity] = seq;
+        fsg->length++;
+        pthread_mutex_unlock(&fsg->lock_length);
+
+        pthread_cond_broadcast(&fsg->cond_length);
+    }
+
+    pthread_mutex_lock(&fsg->lock_length);
+    fsg->empty = true; /* no more values coming in. */
+    pthread_mutex_unlock(&fsg->lock_length);
+    pthread_cond_broadcast(&fsg->cond_length);
+
+    return NULL;
+}
+
+struct fasta_seq *
+fasta_generator_next(struct fasta_seq_gen *fsg)
+{
+    struct fasta_seq *seq;
+
+    pthread_mutex_lock(&fsg->lock_length);
+
+    while (fsg->length == 0) {
+        if (fsg->empty && fsg->length == 0) {
+            pthread_mutex_unlock(&fsg->lock_length);
+            return NULL;
+        }
+        pthread_cond_wait(&fsg->cond_length, &fsg->lock_length);
+    }
+
+    seq = fsg->buf[fsg->pos];
+    fsg->buf[fsg->pos] = NULL;
+    fsg->pos = (fsg->pos + 1) % fsg->capacity;
+    fsg->length--;
+
+    pthread_mutex_unlock(&fsg->lock_length);
+
+    pthread_cond_broadcast(&fsg->cond_length);
+
+    return seq;
 }
 
 static bool

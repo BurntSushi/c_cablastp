@@ -1,6 +1,9 @@
 #ifndef __CABLASTP_FASTA_H__
 #define __CABLASTP_FASTA_H__
 
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -18,6 +21,20 @@ struct fasta_seq {
     char *seq;
 };
 
+struct fasta_seq_gen {
+    pthread_t thread;
+    pthread_mutex_t lock_empty;
+    pthread_mutex_t lock_length;
+    pthread_cond_t cond_length; 
+    FILE *fp;
+    struct fasta_seq **buf;
+    int pos;
+    int length;
+    int capacity;
+    bool empty;
+    const char *exclude;
+};
+
 struct fasta_file *
 fasta_read_all(const char *file_name, const char *exclude);
 
@@ -29,5 +46,15 @@ fasta_free_all(struct fasta_file *ff);
 
 void
 fasta_free_seq(struct fasta_seq *seq);
+
+struct fasta_seq_gen *
+fasta_generator_start(const char *file_name, const char *exclude,
+                      int buffer_capacity);
+
+void
+fasta_generator_free(struct fasta_seq_gen *fsg);
+
+struct fasta_seq *
+fasta_generator_next(struct fasta_seq_gen *fsg);
 
 #endif

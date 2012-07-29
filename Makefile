@@ -1,8 +1,8 @@
 CC=gcc
-CFLAGS=-g -O3 -ansi -Wall -Wextra -pedantic
+CFLAGS=-g -O3 -ansi -Wall -Wextra -pedantic -lpthread
 HEADERS=src/fasta.h src/util.h
 OBJS=src/fasta.o src/main.o src/util.o
-LDFLAGS=-I. -L. -lds
+LDFLAGS=-I. -L. -lds -lpthread
 
 cablastp: $(OBJS) src/blosum62.h
 	$(CC) $(CFLAGS) $(OBJS) -o cablastp
