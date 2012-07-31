@@ -6,6 +6,8 @@
 
 #include "ds.h"
 
+#include "align.h"
+
 struct cbp_link_to_coarse {
     char *diff;
     int32_t coarse_seq_id;
@@ -17,7 +19,7 @@ struct cbp_link_to_coarse {
 struct cbp_link_to_coarse *
 cbp_link_to_coarse_init(int32_t coarse_seq_id,
                         int16_t coarse_start, int16_t coarse_end,
-                        char *align_ref, char *align_tgt);
+                        struct cbp_alignment alignment);
 
 struct cbp_link_to_coarse *
 cbp_link_to_coarse_init_nodiff(int32_t coarse_seq_id,
@@ -63,5 +65,9 @@ cbp_compressed_add(struct cbp_compressed *com_db,
 
 void
 cbp_compressed_save_plain(struct cbp_compressed *com_db);
+
+void
+cbp_compressed_write(struct cbp_compressed *com_db,
+                     struct cbp_compressed_seq *seq);
 
 #endif

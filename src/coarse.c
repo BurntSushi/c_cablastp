@@ -15,7 +15,7 @@ cbp_coarse_init(int32_t seed_size,
     assert(coarse_db);
 
     coarse_db->seqs = ds_vector_create_capacity(1000000);
-    /* coarse_db->seeds = cbp_seeds_init(seed_size); */
+    coarse_db->seeds = cbp_seeds_init(seed_size);
     coarse_db->file_fasta = file_fasta;
     coarse_db->file_seeds = file_seeds;
     coarse_db->file_links = file_links;
@@ -47,6 +47,7 @@ cbp_coarse_free(struct cbp_coarse *coarse_db)
             (struct cbp_coarse_seq *) ds_vector_get(coarse_db->seqs, i));
 
     ds_vector_free_no_data(coarse_db->seqs);
+    cbp_seeds_free(coarse_db->seeds);
     free(coarse_db);
 }
 
@@ -63,7 +64,7 @@ cbp_coarse_add(struct cbp_coarse *coarse_db,
     ds_vector_append(coarse_db->seqs, (void*) seq);
     pthread_rwlock_unlock(&coarse_db->lock_seq);
 
-    /* add to seeds */
+    cbp_seeds_add(coarse_db->seeds, seq);
 
     return seq;
 }

@@ -64,11 +64,26 @@ cbp_compressed_save_plain(struct cbp_compressed *com_db)
         fprintf(com_db->file_compressed, "> %d; %s\n", seq->id, seq->name);
         for (link = seq->links; link != NULL; link = link->next)
             fprintf(com_db->file_compressed,
-                "reference sequence id: %d, reference range: (%d, %d)\n%s",
+                "reference sequence id: %d, reference range: (%d, %d)\n%s\n",
                 link->coarse_seq_id, link->coarse_start, link->coarse_end,
-                link->diff);
+                link->diff == NULL ? "N/A" : link->diff);
     }
 }
+
+void
+cbp_compressed_write(struct cbp_compressed *com_db,
+                     struct cbp_compressed_seq *seq)
+{
+    struct cbp_link_to_coarse *link;
+
+    fprintf(com_db->file_compressed, "> %d; %s\n", seq->id, seq->name);
+    for (link = seq->links; link != NULL; link = link->next)
+        fprintf(com_db->file_compressed,
+            "reference sequence id: %d, reference range: (%d, %d)\n%s",
+            link->coarse_seq_id, link->coarse_start, link->coarse_end,
+            link->diff);
+}
+
 
 struct cbp_compressed_seq *
 cbp_compressed_seq_init(int32_t id, char *name)
@@ -123,17 +138,20 @@ cbp_compressed_seq_addlink(struct cbp_compressed_seq *seq,
 struct cbp_link_to_coarse *
 cbp_link_to_coarse_init(int32_t coarse_seq_id,
                         int16_t coarse_start, int16_t coarse_end,
-                        char *align_ref, char *align_tgt) {
+                        struct cbp_alignment alignment) {
     struct cbp_link_to_coarse *link;
 
     link = malloc(sizeof(*link));
     assert(link);
 
-    link->diff = NULL;
     link->coarse_seq_id = coarse_seq_id;
     link->coarse_start = coarse_start;
     link->coarse_end = coarse_end;
     link->next = NULL;
+
+    link->diff = malloc((1 + alignment.length) * sizeof(*link->diff));
+    assert(link->diff);
+    strcpy(link->diff, alignment.ref);
 
     return link;
 }

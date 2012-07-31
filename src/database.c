@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "database.h"
 
@@ -22,14 +23,28 @@ cbp_database_init(char *dir, int32_t seed_size, bool add)
     FILE *ffasta, *fseeds, *flinks, *fcompressed, *findex;
     char *pfasta, *pseeds, *plinks, *pcompressed, *pindex;
 
+    pfasta = path_join(dir, CABLASTP_COARSE_FASTA);
+    pseeds = path_join(dir, CABLASTP_COARSE_SEEDS);
+    plinks = path_join(dir, CABLASTP_COARSE_LINKS);
+    pcompressed = path_join(dir, CABLASTP_COMPRESSED);
+    pindex = path_join(dir, CABLASTP_INDEX);
+
     /* If we're not adding to a database, make sure `dir` does not exist. */
     if (!add && 0 == stat(dir, &buf)) {
-        fprintf(stderr,
-            "The directory '%s' already exists. A new compressed "
-            "database cannot be created in the same directory as an "
-            "existing database. If you want to append to an existing "
-            "database, use the '--append' flag.\n", dir);
-        exit(1);
+        /* fprintf(stderr, */
+            /* "The directory '%s' already exists. A new compressed " */
+            /* "database cannot be created in the same directory as an " */
+            /* "existing database. If you want to append to an existing " */
+            /* "database, use the '--append' flag.\n", dir); */
+        /* exit(1); */
+
+        /* Just for testing purposes. */
+        unlink(pfasta);
+        unlink(pseeds);
+        unlink(plinks);
+        unlink(pcompressed);
+        unlink(pindex);
+        rmdir(dir);
     }
     /* Otherwise, check to make sure it *does* exist. */
     if (add && 0 != stat(dir, &buf)) {
@@ -46,12 +61,6 @@ cbp_database_init(char *dir, int32_t seed_size, bool add)
     db = malloc(sizeof(*db));
     assert(db);
     db->name = basename(dir);
-
-    pfasta = path_join(dir, CABLASTP_COARSE_FASTA);
-    pseeds = path_join(dir, CABLASTP_COARSE_LINKS);
-    plinks = path_join(dir, CABLASTP_COARSE_SEEDS);
-    pcompressed = path_join(dir, CABLASTP_COMPRESSED);
-    pindex = path_join(dir, CABLASTP_INDEX);
 
     ffasta = open_db_file(pfasta);
     fseeds = open_db_file(pseeds);

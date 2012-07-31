@@ -10,7 +10,7 @@
 
 #include "ds.h"
 
-/* #include "seeds.h" */
+#include "seeds.h"
 #include "seq.h"
 
 struct cbp_link_to_compressed {
@@ -46,7 +46,7 @@ cbp_coarse_seq_addlink(struct cbp_coarse_seq *seq,
 
 struct cbp_coarse {
     struct DSVector *seqs;
-    /* struct cbp_seeds *seeds; */
+    struct cbp_seeds *seeds;
     FILE *file_fasta;
     FILE *file_seeds;
     FILE *file_links;
