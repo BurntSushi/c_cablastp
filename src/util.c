@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "util.h"
 
@@ -15,9 +16,9 @@ trim_space(char *s)
 char *
 trim(char *s, const char *totrim)
 {
-    int i, j;
-    int start, end;
-    int slen, totrimlen, newlen;
+    int32_t i, j;
+    int32_t start, end;
+    int32_t slen, totrimlen, newlen;
     bool trimmed;
     char *news;
 
@@ -60,11 +61,11 @@ trim(char *s, const char *totrim)
     return news;
 }
 
-int
+int32_t
 readline(FILE *f, char **line)
 {
     char buf[1024];
-    int allocated;
+    int32_t allocated;
 
     allocated = 1; /* for \0 */
     *line = malloc(allocated * sizeof(**line));
@@ -81,4 +82,15 @@ readline(FILE *f, char **line)
             break;
     }
     return allocated - 1;
+}
+
+int32_t
+num_cpus()
+{
+    int32_t cpus;
+
+    cpus = (int32_t) sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpus <= 0)
+        cpus = 1;
+    return cpus;
 }

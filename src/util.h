@@ -1,6 +1,7 @@
 #ifndef __CABLASTP_UTIL_H__
 #define __CABLASTP_UTIL_H__
 
+#include <stdint.h>
 #include <stdio.h>
 
 char *
@@ -9,7 +10,10 @@ trim(char *s, const char *totrim);
 char *
 trim_space(char *s);
 
-int
+int32_t
 readline(FILE *f, char **line);
+
+int32_t
+num_cpus();
 
 #endif

@@ -128,8 +128,7 @@ fasta_generator_start(const char *file_name, const char *exclude,
 {
     FILE *fp;
     struct fasta_seq_gen *fsg;
-    int terrno;
-    int i;
+    int errno;
 
     assert(buffer_capacity > 0);
 
@@ -141,34 +140,13 @@ fasta_generator_start(const char *file_name, const char *exclude,
     fsg = malloc(sizeof(*fsg));
     assert(fsg);
 
+    fsg->seqs = ds_queue_create(buffer_capacity);
     fsg->fp = fp;
-    fsg->pos = 0;
-    fsg->length = 0;
-    fsg->capacity = buffer_capacity;
-    fsg->empty = false;
     fsg->exclude = exclude;
 
-    fsg->buf = malloc(buffer_capacity * sizeof(*fsg->buf));
-    assert(fsg->buf);
-    for (i = 0; i < fsg->capacity; i++)
-        fsg->buf[i] = NULL;
-
-    if (0 != (terrno = pthread_cond_init(&fsg->cond_length, NULL))) {
-        fprintf(stderr, "Could not create cond var. Errno: %d\n", terrno);
-        exit(1);
-    }
-    if (0 != (terrno = pthread_mutex_init(&fsg->lock_empty, NULL))) {
-        fprintf(stderr, "Could not create mutex. Errno: %d\n", terrno);
-        exit(1);
-    }
-    if (0 != (terrno = pthread_mutex_init(&fsg->lock_length, NULL))) {
-        fprintf(stderr, "Could not create mutex. Errno: %d\n", terrno);
-        exit(1);
-    }
-
-    terrno = pthread_create(&fsg->thread, NULL, fasta_generator, (void*) fsg);
-    if (0 != terrno) {
-        fprintf(stderr, "Could not create pthread. Errno: %d\n", terrno);
+    errno = pthread_create(&fsg->thread, NULL, fasta_generator, (void*) fsg);
+    if (0 != errno) {
+        fprintf(stderr, "Could not create pthread. Errno: %d\n", errno);
         exit(1);
     }
 
@@ -178,26 +156,14 @@ fasta_generator_start(const char *file_name, const char *exclude,
 void
 fasta_generator_free(struct fasta_seq_gen *fsg)
 {
-    int terrno;
+    int errno;
 
-    if (0 != (terrno = pthread_mutex_destroy(&fsg->lock_empty))) {
-        fprintf(stderr, "Could not destroy mutex. Errno: %d\n", terrno);
-        exit(1);
-    }
-    if (0 != (terrno = pthread_mutex_destroy(&fsg->lock_length))) {
-        fprintf(stderr, "Could not destroy mutex. Errno: %d\n", terrno);
-        exit(1);
-    }
-    if (0 != (terrno = pthread_cond_destroy(&fsg->cond_length))) {
-        fprintf(stderr, "Could not destroy cond var. Errno: %d\n", terrno);
-        exit(1);
-    }
-    if (0 != (terrno = pthread_join(fsg->thread, NULL))) {
-        fprintf(stderr, "Could not join thread. Errno: %d\n", terrno);
+    if (0 != (errno = pthread_join(fsg->thread, NULL))) {
+        fprintf(stderr, "Could not join thread. Errno: %d\n", errno);
         exit(1);
     }
     fclose(fsg->fp);
-    free(fsg->buf);
+    ds_queue_free(fsg->seqs);
     free(fsg);
 }
 
@@ -210,25 +176,10 @@ fasta_generator(void *gen)
     fsg = (struct fasta_seq_gen *) gen;
 
     while (NULL != (seq = fasta_read_next(fsg->fp, fsg->exclude))) {
-        pthread_mutex_lock(&fsg->lock_length);
-        while (fsg->length == fsg->capacity)
-            pthread_cond_wait(&fsg->cond_length, &fsg->lock_length);
-
-        assert(fsg->length < fsg->capacity);
-        assert(fsg->length >= 0);
-
-        fsg->buf[(fsg->pos + fsg->length) % fsg->capacity] = seq;
-        fsg->length++;
-        pthread_mutex_unlock(&fsg->lock_length);
-
-        pthread_cond_broadcast(&fsg->cond_length);
+        ds_queue_push(fsg->seqs, seq);
     }
 
-    pthread_mutex_lock(&fsg->lock_length);
-    fsg->empty = true; /* no more values coming in. */
-    pthread_mutex_unlock(&fsg->lock_length);
-    pthread_cond_broadcast(&fsg->cond_length);
-
+    ds_queue_close(fsg->seqs);
     return NULL;
 }
 
@@ -237,25 +188,7 @@ fasta_generator_next(struct fasta_seq_gen *fsg)
 {
     struct fasta_seq *seq;
 
-    pthread_mutex_lock(&fsg->lock_length);
-
-    while (fsg->length == 0) {
-        if (fsg->empty && fsg->length == 0) {
-            pthread_mutex_unlock(&fsg->lock_length);
-            return NULL;
-        }
-        pthread_cond_wait(&fsg->cond_length, &fsg->lock_length);
-    }
-
-    seq = fsg->buf[fsg->pos];
-    fsg->buf[fsg->pos] = NULL;
-    fsg->pos = (fsg->pos + 1) % fsg->capacity;
-    fsg->length--;
-
-    pthread_mutex_unlock(&fsg->lock_length);
-
-    pthread_cond_broadcast(&fsg->cond_length);
-
+    seq = (struct fasta_seq *) ds_queue_pop(fsg->seqs);
     return seq;
 }
 

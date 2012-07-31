@@ -1,13 +1,19 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "blosum62.h"
-#include "fasta.h"
+#include "opt.h"
 
-#define FILENAME "../cablastp/data/orf_trans_all.fasta"
+#include "blosum62.h"
+#include "database.h"
+#include "flags.h"
+#include "fasta.h"
+#include "util.h"
+
+#define FILENAME "../../cablastp/data/orf_trans_all.fasta"
 /* #define FILENAME "/home/andrew/nr.fasta" */
 
 struct job {
@@ -18,39 +24,57 @@ struct job {
 void * test(void *data);
 
 int
-/* main(int argc, char **argv) */
-main(void)
+main(int argc, char **argv)
 {
-    struct fasta_seq_gen *fsg;
-    pthread_t *threads;
-    struct job *jobs;
+    struct cbp_database *db;
+    struct opt_config *conf;
+    struct opt_args *args;
     int i;
-    int cpus = 0;
+    /* int cpus = 0; */
+    /* struct fasta_seq_gen *fsg; */
+    /* pthread_t *threads; */
+    /* struct job *jobs; */
 
-    cpus = (int) sysconf(_SC_NPROCESSORS_ONLN);
-    fsg = fasta_generator_start(FILENAME, FASTA_EXCLUDE_NCBI_BLOSUM62, 1000);
-
-    assert(threads = malloc(cpus * sizeof(*threads)));
-    assert(jobs = malloc(cpus * sizeof(*jobs)));
-    for (i = 0; i < cpus; i++) {
-        char *id;
-
-        assert(id = malloc(10 * sizeof(*id)));
-        sprintf(id, "%d", i);
-
-        jobs[i].fsg = fsg;
-        jobs[i].id = id; 
-
-        pthread_create(&(threads[i]), NULL, test, (void*) &(jobs[i]));
-    }
-    for (i = 0; i < cpus; i++) {
-        assert(0 == pthread_join(threads[i], NULL));
-        free(jobs[i].id);
+    conf = load_compress_args();
+    args = opt_config_parse(conf, argc, argv);
+    if (args->nargs < 2) {
+        fprintf(stderr, 
+            "Usage: %s [flags] database-dir fasta-file [ fasta-file ... ]\n",
+            argv[0]);
+        opt_config_print_usage(conf);
+        exit(1);
     }
 
-    fasta_generator_free(fsg);
-    free(jobs);
-    free(threads);
+    db = cbp_database_init(args->args[0], compress_flags.seed_size, false);
+    for (i = 1; i < args->nargs; i++)
+        printf("Fasta file argument %d: %s\n", i, args->args[i]);
+
+    /* fsg = fasta_generator_start(FILENAME, FASTA_EXCLUDE_NCBI_BLOSUM62, 10000); */
+/*  */
+    /* assert(threads = malloc(cpus * sizeof(*threads))); */
+    /* assert(jobs = malloc(cpus * sizeof(*jobs))); */
+    /* for (i = 0; i < num_cpus(); i++) { */
+        /* char *id; */
+/*  */
+        /* assert(id = malloc(10 * sizeof(*id))); */
+        /* sprintf(id, "%d", i); */
+/*  */
+        /* jobs[i].fsg = fsg; */
+        /* jobs[i].id = id;  */
+/*  */
+        /* pthread_create(&(threads[i]), NULL, test, (void*) &(jobs[i])); */
+    /* } */
+    /* for (i = 0; i < cpus; i++) { */
+        /* assert(0 == pthread_join(threads[i], NULL)); */
+        /* free(jobs[i].id); */
+    /* } */
+
+    cbp_database_free(db);
+    opt_config_free(conf);
+    opt_args_free(args);
+    /* fasta_generator_free(fsg); */
+    /* free(jobs); */
+    /* free(threads); */
 
     return 0;
 }
@@ -61,12 +85,12 @@ test(void *data)
     struct fasta_seq *seq;
     struct job *j;
     int cnt = 0;
-    /* unsigned int i; */
+    unsigned int i;
 
     j = (struct job *) data;
     while (NULL != (seq = fasta_generator_next(j->fsg))) {
         cnt++;
-        /* for (i = 0; i < strlen(seq->seq) * 2000; i++); */
+        for (i = 0; i < strlen(seq->seq) * 2000; i++);
         fasta_free_seq(seq);
     }
     printf("Thread %s consumed %d sequences.\n", j->id, cnt);

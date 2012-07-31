@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "ds.h"
+
 #define FASTA_INITIAL_SEQUENCE_LENGTH 1000
 #define FASTA_MAX_LINE 1024
 #define FASTA_EXCLUDE_NCBI_BLOSUM62 "JOU"
@@ -22,15 +24,8 @@ struct fasta_seq {
 
 struct fasta_seq_gen {
     pthread_t thread;
-    pthread_mutex_t lock_empty;
-    pthread_mutex_t lock_length;
-    pthread_cond_t cond_length; 
     FILE *fp;
-    struct fasta_seq **buf;
-    int pos;
-    int length;
-    int capacity;
-    bool empty;
+    struct DSQueue *seqs;
     const char *exclude;
 };
 
