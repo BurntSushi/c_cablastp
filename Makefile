@@ -7,3 +7,6 @@ src/cablastp-compress:
 clean:
 	(cd src && make clean)
 
+push:
+	git push origin master
+
