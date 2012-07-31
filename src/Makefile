@@ -42,3 +42,6 @@ clean:
 	rm -f cablastp-compress
 	rm -f test-*
 
+loc:
+	find ./ -name '*.[ch]' -print0 | xargs -0 wc -l
+
