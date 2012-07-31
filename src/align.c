@@ -125,6 +125,10 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
     bool constrained;
     bool allocated = false;
     char tmp;
+    static int32_t nw_count = 0;
+
+    nw_count++; 
+    printf("%d\n", nw_count);
 
     gapi = BLOSUM62_SIZE - 1;
     r = rend - rstart + 1; /* include gap penalty */
@@ -132,20 +136,25 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
     tablen = r * c;
     off = 0;
 
+    constrained = true;
+    constraint = r / 4;
+    if (r <= 11 || c <= 11)
+        constrained = false;
+
     if (tablen > CABLASTP_ALIGN_SEQ_SIZE * CABLASTP_ALIGN_SEQ_SIZE) {
         table = malloc(tablen * sizeof(*table));
         assert(table);
         allocated = true;
     } else {
         table = mem->table;
-        for (i = 0; i < tablen; i++)
-            table[i] = 0;
+        /* for (i = 0; i < tablen; i++) */
+        for (i = 1; i < r; i++)
+            for (j = 1; j < c; j++) {
+                if (constrained && ((i-j) > constraint || (j-i) > constraint))
+                    continue;
+                table[i] = 0;
+            }
     }
-
-    constrained = true;
-    constraint = r / 4;
-    if (r <= 11 || c <= 11)
-        constrained = false;
 
     for (i = 1; i < r; i++) {
         i2 = (i - 1) * c;
