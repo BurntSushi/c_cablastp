@@ -6,6 +6,7 @@ src/cablastp-compress:
 
 clean:
 	(cd src && make clean)
+	rm -f cablastp-*
 
 push:
 	git push origin master
