@@ -14,7 +14,7 @@ struct extend_match {
     int32_t olen;
 };
 
-static struct extend_match
+struct extend_match
 extend_match(struct cbp_align_nw_memory *mem,
              char *rseq, int32_t rstart, int32_t rend,
              char *oseq, int32_t ostart, int32_t oend);
@@ -37,7 +37,7 @@ cbp_compress_start_workers(struct cbp_database *db, int32_t num_workers)
     struct worker_args *wargs;
     int32_t i, errno;
 
-    jobs = ds_queue_create(200);
+    jobs = ds_queue_create(20);
 
     wargs = malloc(sizeof(*wargs));
     assert(wargs);
@@ -206,7 +206,7 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
     return cseq;
 }
 
-static struct extend_match
+struct extend_match
 extend_match(struct cbp_align_nw_memory *mem,
              char *rseq, int32_t rstart, int32_t rend,
              char *oseq, int32_t ostart, int32_t oend)
@@ -240,8 +240,8 @@ extend_match(struct cbp_align_nw_memory *mem,
 
         alignment = cbp_align_nw(
             mem,
-            rseq, rstart + mlens.rlen, min(rlen, rstart + mlens.rlen + gwsize),
-            oseq, ostart + mlens.olen, min(olen, ostart + mlens.olen + gwsize));
+            rseq, rstart + mlens.rlen, min(rend, rstart + mlens.rlen + gwsize),
+            oseq, ostart + mlens.olen, min(oend, ostart + mlens.olen + gwsize));
 
         id = cbp_align_identity(
             alignment.ref, 0, alignment.length,

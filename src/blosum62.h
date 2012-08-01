@@ -7,8 +7,7 @@
 
 #define BLOSUM62_SIZE 24
 
-int32_t
-blosum62_residue_to_index(char residue);
+const int8_t BLOSUM62_RESIDUE_TO_INDEX[26];
 
 const int BLOSUM62_MATRIX[BLOSUM62_SIZE][BLOSUM62_SIZE];
 

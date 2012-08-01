@@ -25,6 +25,7 @@ cbp_align_identity(char *rseq, int32_t rstart, int32_t rend,
 
 struct cbp_align_nw_memory {
     int32_t *table;
+    int32_t *zeroes;
     char *ref;
     char *org;
 };

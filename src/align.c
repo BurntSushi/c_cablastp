@@ -93,6 +93,9 @@ cbp_align_nw_memory_init()
     mem->table = malloc(seq_size * seq_size * sizeof(*mem->table));
     assert(mem->table);
 
+    mem->zeroes = malloc(seq_size * seq_size * sizeof(*mem->zeroes));
+    assert(mem->zeroes);
+
     mem->ref = malloc(seq_size * sizeof(*mem->ref));
     assert(mem->ref);
 
@@ -105,6 +108,7 @@ cbp_align_nw_memory_init()
 void
 cbp_align_nw_memory_free(struct cbp_align_nw_memory *mem)
 {
+    free(mem->zeroes);
     free(mem->table);
     free(mem->ref);
     free(mem->org);
@@ -125,10 +129,6 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
     bool constrained;
     bool allocated = false;
     char tmp;
-    static int32_t nw_count = 0;
-
-    nw_count++; 
-    printf("%d\n", nw_count);
 
     gapi = BLOSUM62_SIZE - 1;
     r = rend - rstart + 1; /* include gap penalty */
@@ -147,13 +147,19 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
         allocated = true;
     } else {
         table = mem->table;
-        /* for (i = 0; i < tablen; i++) */
-        for (i = 1; i < r; i++)
-            for (j = 1; j < c; j++) {
-                if (constrained && ((i-j) > constraint || (j-i) > constraint))
-                    continue;
-                table[i] = 0;
-            }
+        for (i = 0; i < tablen; i++)
+            table[i] = 0;
+
+        /* for (i = 0; i < r; i++) */
+            /* for (j = 0; j < c; j++) { */
+                /* We need to be slightly more relaxed on our contraint
+                 * here as opposed to below. Namely, we need to make sure to
+                 * zero out the boundary cells, which could still be used. */
+                /* if (constrained && */
+                    /* ((i-j-1) > constraint || (j-i-1) > constraint)) */
+                    /* continue; */
+                /* table[i * c + j] = 0; */
+            /* } */
     }
 
     for (i = 1; i < r; i++) {
@@ -162,8 +168,9 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
         for (j = 1; j < c; j++) {
             if (constrained && ((i-j) > constraint || (j-i) > constraint))
                 continue;
-            rval = blosum62_residue_to_index(rseq[rstart + i - 1]);
-            oval = blosum62_residue_to_index(oseq[ostart + j - 1]);
+
+            rval = BLOSUM62_RESIDUE_TO_INDEX[rseq[rstart + i - 1] - 'A'];
+            oval = BLOSUM62_RESIDUE_TO_INDEX[oseq[ostart + j - 1] - 'A'];
 
             off = i2 + (j - 1);
             sdiag = table[off] + BLOSUM62_MATRIX[rval][oval];
@@ -186,8 +193,8 @@ cbp_align_nw(struct cbp_align_nw_memory *mem,
     i = r - 1;
     j = c - 1;
     while (i > 0 && j > 0) {
-        rval = blosum62_residue_to_index(rseq[rstart + i - 1]);
-        oval = blosum62_residue_to_index(oseq[ostart + j - 1]);
+        rval = BLOSUM62_RESIDUE_TO_INDEX[rseq[rstart + i - 1] - 'A'];
+        oval = BLOSUM62_RESIDUE_TO_INDEX[oseq[ostart + j - 1] - 'A'];
 
         sdiag = table[(i-1) * c + (j-1)] + BLOSUM62_MATRIX[rval][oval];
         sup = table[(i-1) * c + j] + BLOSUM62_MATRIX[gapi][oval];

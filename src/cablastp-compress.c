@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "opt.h"
@@ -15,16 +16,6 @@
 #include "seq.h"
 #include "util.h"
 
-#define FILENAME "../../cablastp/data/orf_trans_all.fasta"
-/* #define FILENAME "/home/andrew/nr.fasta" */
-
-struct job {
-    struct fasta_seq_gen *fsg;
-    char* id;
-};
-
-void * test(void *data);
-
 int
 main(int argc, char **argv)
 {
@@ -36,6 +27,8 @@ main(int argc, char **argv)
     struct fasta_seq *seq;
     struct cbp_seq *org_seq;
     int i, org_seq_id;
+    struct timeval start, current;
+    long double elapsed;
 
     conf = load_compress_args();
     args = opt_config_parse(conf, argc, argv);
@@ -48,12 +41,13 @@ main(int argc, char **argv)
     }
 
     db = cbp_database_init(args->args[0], compress_flags.seed_size, false);
-    workers = cbp_compress_start_workers(db, 1);
+    workers = cbp_compress_start_workers(db, compress_flags.procs);
 
     org_seq_id = 0;
+    gettimeofday(&start, NULL);
     for (i = 1; i < args->nargs; i++) {
         fsg = fasta_generator_start(
-            args->args[i], FASTA_EXCLUDE_NCBI_BLOSUM62, 1000);
+            args->args[i], FASTA_EXCLUDE_NCBI_BLOSUM62, 100);
 
         while (NULL != (seq = fasta_generator_next(fsg))) {
             org_seq = cbp_seq_init(org_seq_id, seq->name, seq->seq);
@@ -62,8 +56,12 @@ main(int argc, char **argv)
             fasta_free_seq(seq);
 
             org_seq_id++;
-            if (org_seq_id % 1000 == 0)
-                printf("%d sequences compressed\n", org_seq_id);
+            if (org_seq_id % 1000 == 0) {
+                gettimeofday(&current, NULL);
+                elapsed = (long double)(current.tv_sec - start.tv_sec);
+                printf("%d sequences compressed (%0.4Lf seqs/sec)\n",
+                    org_seq_id, ((long double) org_seq_id) / elapsed);
+            }
         }
 
         fasta_generator_free(fsg);
@@ -79,23 +77,4 @@ main(int argc, char **argv)
     cbp_compress_free_workers(workers);
 
     return 0;
-}
-
-void *
-test(void *data)
-{
-    struct fasta_seq *seq;
-    struct job *j;
-    int cnt = 0;
-    unsigned int i;
-
-    j = (struct job *) data;
-    while (NULL != (seq = fasta_generator_next(j->fsg))) {
-        cnt++;
-        for (i = 0; i < strlen(seq->seq) * 2000; i++);
-        fasta_free_seq(seq);
-    }
-    printf("Thread %s consumed %d sequences.\n", j->id, cnt);
-
-    return NULL;
 }

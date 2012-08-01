@@ -39,6 +39,13 @@ struct {
         "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         62
     },
+    {
+        "GHIKLMNPQRSTVW",
+        "GAAAHIKLMNPQRSTVW",
+        "---GHIKLMNPQRSTVW",
+        "GAAAHIKLMNPQRSTVW",
+        17
+    },
     /* {  */
         /* "ABCDEFGWXYZ",  */
         /* "ABCDEFMNPQRSTZABEGWXYZ",  */

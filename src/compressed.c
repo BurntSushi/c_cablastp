@@ -79,9 +79,9 @@ cbp_compressed_write(struct cbp_compressed *com_db,
     fprintf(com_db->file_compressed, "> %d; %s\n", seq->id, seq->name);
     for (link = seq->links; link != NULL; link = link->next)
         fprintf(com_db->file_compressed,
-            "reference sequence id: %d, reference range: (%d, %d)\n%s",
+            "reference sequence id: %d, reference range: (%d, %d)\n%s\n",
             link->coarse_seq_id, link->coarse_start, link->coarse_end,
-            link->diff);
+            link->diff == NULL ? "N/A" : link->diff);
 }
 
 

@@ -94,3 +94,21 @@ num_cpus()
         cpus = 1;
     return cpus;
 }
+
+char *
+str_slice(char *str, int32_t start, int32_t end)
+{
+    char *ret;
+    int32_t len;
+
+    len = strlen(str);
+
+    assert(end > start);
+    assert(start >= 0);
+    assert(end <= len);
+
+    ret = malloc((1 + end - start) * sizeof(*ret));
+    strncpy(ret, str + start, end - start);
+
+    return ret;
+}
