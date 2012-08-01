@@ -13,24 +13,24 @@ load_compress_args()
     cpus = num_cpus();
 
     opt_flag_int(conf, 
-        &compress_flags.gapped_window_size, "gapped-window-size", 15,
+        &compress_flags.gapped_window_size, "gapped-window-size", 75,
         "The size of the gapped match window.");
     opt_flag_int(conf,
         &compress_flags.ungapped_window_size, "ungapped-window-size", 10,
         "The size of the ungapped match window.");
     opt_flag_int(conf,
-        &compress_flags.match_extend, "match-extend", 10,
+        &compress_flags.match_extend, "match-extend", 30,
         "The maximum number of residues to blindly extend a match without\n"
         "\tregard to sequence identity. This is to avoid small sequences\n"
         "\tin the coarse database.");
     opt_flag_int(conf,
-        &compress_flags.match_kmer_size, "match-kmer-size", 3,
+        &compress_flags.match_kmer_size, "match-kmer-size", 4,
         "The size of the K-mer fragments to match in ungapped extension.");
     opt_flag_int(conf,
-        &compress_flags.match_seq_id_threshold, "match-seq-id-threshold", 75,
+        &compress_flags.match_seq_id_threshold, "match-seq-id-threshold", 70,
         "The sequence identity threshold of an entire match.");
     opt_flag_int(conf,
-        &compress_flags.min_match_len, "min-match-len", 25,
+        &compress_flags.min_match_len, "min-match-len", 50,
         "The minimum length of a match.");
     opt_flag_int(conf,
         &compress_flags.procs, "procs", cpus,

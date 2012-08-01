@@ -14,7 +14,7 @@ cbp_coarse_init(int32_t seed_size,
     coarse_db = malloc(sizeof(*coarse_db));
     assert(coarse_db);
 
-    coarse_db->seqs = ds_vector_create_capacity(1000000);
+    coarse_db->seqs = ds_vector_create_capacity(10000000);
     coarse_db->seeds = cbp_seeds_init(seed_size);
     coarse_db->file_fasta = file_fasta;
     coarse_db->file_seeds = file_seeds;

@@ -115,6 +115,8 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
     int32_t id;
     bool has_end, changed;
 
+    int32_t num_seeds = 0;
+
     cseq = cbp_compressed_seq_init(org_seq->id, org_seq->name);
     seed_size = coarse_db->seeds->seed_size;
     mext = compress_flags.match_extend;
@@ -128,6 +130,7 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
             continue;
 
         for (seedLoc = seeds; seedLoc != NULL; seedLoc = seedLoc->next) {
+            num_seeds++;
             resind = seedLoc->residue_index;
             coarse_seq = cbp_coarse_get(coarse_db, seedLoc->coarse_seq_id);
 
@@ -202,6 +205,8 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
             cbp_link_to_coarse_init_nodiff(
                 new_coarse_seq_id, 0, org_seq->length - last_match));
     }
+
+    /* printf("Inspected %d seeds.\n", num_seeds); */
 
     return cseq;
 }
