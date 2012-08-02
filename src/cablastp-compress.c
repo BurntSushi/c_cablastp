@@ -40,7 +40,7 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    db = cbp_database_init(args->args[0], compress_flags.seed_size, false);
+    db = cbp_database_init(args->args[0], compress_flags.map_seed_size, false);
     workers = cbp_compress_start_workers(db, compress_flags.procs);
 
     org_seq_id = 0;

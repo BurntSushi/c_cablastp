@@ -36,8 +36,12 @@ load_compress_args()
         &compress_flags.procs, "procs", cpus,
         "The number of total CPUs to use to divide work.");
     opt_flag_int(conf,
-        &compress_flags.seed_size, "seed-size", 6,
-        "The size of a K-mer seed.");
+        &compress_flags.map_seed_size, "map-seed-size", 6,
+        "The size of a seed in the K-mer map. This size combined with "
+        "'ext-seed-size' forms the total seed size.");
+    opt_flag_int(conf,
+        &compress_flags.ext_seed_size, "ext-seed-size", 4,
+        "The additional residues to require for each seed match.");
     opt_flag_int(conf,
         &compress_flags.ext_seq_id_threshold, "ext-seq-id-threshold", 50,
         "The sequence identity threshold of [un]gapped extension.");

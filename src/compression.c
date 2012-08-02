@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "compression.h"
 #include "flags.h"
@@ -110,29 +111,37 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
     struct cbp_seed_loc *seeds, *seedLoc;
     struct cbp_alignment alignment;
     char *kmer;
-    int32_t seed_size, resind, mext, new_coarse_seq_id;
+    int32_t seed_size, ext_seed, resind, mext, new_coarse_seq_id;
     int32_t last_match, current;
     int32_t id;
     bool has_end, changed;
 
-    int32_t num_seeds = 0;
-
     cseq = cbp_compressed_seq_init(org_seq->id, org_seq->name);
     seed_size = coarse_db->seeds->seed_size;
     mext = compress_flags.match_extend;
+    ext_seed = compress_flags.ext_seed_size;
+
 
     last_match = 0;
     current = 0;
-    for (current = 0; current < org_seq->length - seed_size; current++) {
+    for (current = 0; current < org_seq->length - seed_size - ext_seed; current++) {
         kmer = org_seq->residues + current;
         seeds = cbp_seeds_lookup(coarse_db->seeds, kmer);
         if (seeds == NULL)
             continue;
 
         for (seedLoc = seeds; seedLoc != NULL; seedLoc = seedLoc->next) {
-            num_seeds++;
             resind = seedLoc->residue_index;
             coarse_seq = cbp_coarse_get(coarse_db, seedLoc->coarse_seq_id);
+
+            if (resind + seed_size + ext_seed > coarse_seq->seq->length)
+                continue;
+
+            if (0 != strncmp(
+                        coarse_seq->seq->residues + seed_size,
+                        org_seq->residues + seed_size,
+                        ext_seed))
+                continue;
 
             mlens = extend_match(
                 mem,
@@ -205,8 +214,6 @@ cbp_compress(struct cbp_coarse *coarse_db, struct cbp_seq *org_seq,
             cbp_link_to_coarse_init_nodiff(
                 new_coarse_seq_id, 0, org_seq->length - last_match));
     }
-
-    /* printf("Inspected %d seeds.\n", num_seeds); */
 
     return cseq;
 }
