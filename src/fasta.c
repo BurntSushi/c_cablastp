@@ -177,7 +177,7 @@ fasta_generator(void *gen)
     fsg = (struct fasta_seq_gen *) gen;
 
     while (NULL != (seq = fasta_read_next(fsg->fp, fsg->exclude))) {
-        ds_queue_push(fsg->seqs, seq);
+        ds_queue_put(fsg->seqs, seq);
     }
 
     ds_queue_close(fsg->seqs);
@@ -189,7 +189,7 @@ fasta_generator_next(struct fasta_seq_gen *fsg)
 {
     struct fasta_seq *seq;
 
-    seq = (struct fasta_seq *) ds_queue_pop(fsg->seqs);
+    seq = (struct fasta_seq *) ds_queue_get(fsg->seqs);
     return seq;
 }
 

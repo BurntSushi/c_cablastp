@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-g -O3 -ansi -Wall -Wextra -pedantic -lpthread -I.
-LDFLAGS=-L.
+LDFLAGS=-L/home/andrew/data/projects/clibs/lib
 LDLIBS=-lds -lpthread -lopt
 
 COMPRESS_OBJS=align.o blosum62.o blosum62_matrix.o \

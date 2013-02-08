@@ -97,7 +97,7 @@ void
 cbp_compress_send_job(struct cbp_compress_workers *workers,
                       struct cbp_seq *org_seq)
 {
-    ds_queue_push(workers->jobs, (void*) org_seq);
+    ds_queue_put(workers->jobs, (void*) org_seq);
 }
 
 struct cbp_compressed_seq *
@@ -284,7 +284,7 @@ cbp_compress_worker(void *data)
 
     args = (struct worker_args *) data;
     mem = cbp_align_nw_memory_init();
-    while (NULL != (s = (struct cbp_seq *) ds_queue_pop(args->jobs))) {
+    while (NULL != (s = (struct cbp_seq *) ds_queue_get(args->jobs))) {
         cseq = cbp_compress(args->db->coarse_db, s, mem);
         cbp_compressed_write(args->db->com_db, cseq);
         cbp_seq_free(s);
