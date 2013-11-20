@@ -32,7 +32,7 @@ git clone git://github.com/BurntSushi/clibs
 git clone git://github.com/BurntSushi/c_cablastp
 cd clibs
 make
-export C_INCLUDE_PATH=$(pwd)/include                                                                                                                                      
+export C_INCLUDE_PATH=$(pwd)/include
 export LIBRARY_PATH=$(pwd)/lib
 cd ../c_cablastp
 make
