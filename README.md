@@ -7,7 +7,12 @@ in the official Go implementation.
 The compressed databases created by this code are not in any way compatible 
 with the compressed databases produced by the official implementation. Namely, 
 the data itself should be the same (or similar), but its representation on disk 
-is completely different.
+is completely different. There may be other, subtler differences as well.
+
+**This code should not be used.** It is provided for those interested in an
+alternative implementation.
+
+There are no benchmarks.
 
 The official Go implementation can be found here:
 https://github.com/BurntSushi/cablastp
